@@ -2,6 +2,7 @@ import sys
 import csv
 import json
 from typing import List, Dict, Any
+from collections import Counter
 
 # Alias de type pour clarifier la structure des données internes
 DataList = List[Dict[str, Any]]
@@ -287,12 +288,106 @@ def afficher_donnees(data: DataList):
 
 
 def afficher_statistiques(data: DataList):
-    """(J5/J6) Calcule et affiche les statistiques."""
-    print("\n[STATISTIQUES ET STRUCTURE]")
+    """
+    (J5/Début J6) Calcule et affiche les statistiques (Min/Max/Moyenne)
+    et la distribution des types pour chaque colonne.
+    """
+    print("\n[STATISTIQUES ET ANALYSE DE STRUCTURE]")
     if not data:
         print("Veuillez d'abord charger les données.")
+        input("Appuyez sur Entrée pour continuer...")
         return
-    print("Fonctionnalité en cours de développement (J5/J6).")
+
+    stats_numeriques: Dict[str, List[float]] = {}
+    structure_types: Dict[str, Counter] = {}
+
+    # 1. Collecter les valeurs numériques et les types pour chaque colonne
+    for item in data:
+        for key, value in item.items():
+
+            # Initialisation pour la colonne
+            if key not in structure_types:
+                structure_types[key] = Counter()
+
+            # Enregistrement des types pour l'analyse de structure (J6)
+            if value is None:
+                structure_types[key]['None'] += 1
+            elif isinstance(value, bool):
+                structure_types[key]['bool'] += 1
+            elif isinstance(value, int):
+                structure_types[key]['int'] += 1
+            elif isinstance(value, float):
+                structure_types[key]['float'] += 1
+            elif isinstance(value, str):
+                structure_types[key]['str'] += 1
+            else:
+                # Pour les listes, dicts, etc.
+                structure_types[key]['autres'] += 1
+
+            # Collection pour les statistiques numériques (J5)
+            if isinstance(value, (int, float)):
+                if key not in stats_numeriques:
+                    stats_numeriques[key] = []
+                stats_numeriques[key].append(float(value))
+
+                # --- PARTIE J5 : STATISTIQUES NUMÉRIQUES DE BASE (Min/Max/Moyenne) ---
+    print("\n--- Statistiques Min/Max/Moyenne (Colonnes Numériques) ---")
+
+    if not stats_numeriques:
+        print("Aucune colonne purement numérique (int ou float) n'a été trouvée pour cette analyse.")
+    else:
+        print("-" * 75)
+        # 75 = 20 (col) + 3*10 (min/max/moy) + 15 (compte) + 4*2 (séparateurs)
+        print(f"{'Colonne':<20} | {'Min':<10} | {'Max':<10} | {'Moyenne':<10} | {'Nombres comptés':<15}")
+        print("-" * 75)
+
+        # Calculer et afficher les statistiques
+        for key in sorted(stats_numeriques.keys()):
+            values = stats_numeriques[key]
+            if not values: continue
+
+            count = len(values)
+            minimum = min(values)
+            maximum = max(values)
+            moyenne = sum(values) / count
+
+            # Afficher les résultats avec une précision de 2 décimales pour les flottants
+            print(f"{key:<20} | {minimum:<10.2f} | {maximum:<10.2f} | {moyenne:<10.2f} | {count:<15}")
+
+        print("-" * 75)
+
+    # --- PARTIE DÉBUT J6 : ANALYSE DE STRUCTURE ET TYPES ---
+    print("\n--- Analyse de la Structure des Données (Distribution des Types) ---")
+
+    if not structure_types:
+        print("Aucun enregistrement ou colonne trouvé pour l'analyse.")
+    else:
+        # Définir l'ordre des types pour un affichage cohérent
+        types_disponibles = ['int', 'float', 'bool', 'str', 'None', 'autres']
+
+        # Déterminer la largeur d'affichage
+        header_line = f"{'Colonne':<20} | " + " | ".join(f"{t:<10}" for t in types_disponibles)
+        print("-" * len(header_line))
+        print(header_line)
+        print("-" * len(header_line))
+
+        # Afficher la distribution pour chaque colonne
+        for key in sorted(structure_types.keys()):
+            output = f"{key:<20} | "
+            total_count = sum(structure_types[key].values())
+
+            for type_name in types_disponibles:
+                count = structure_types[key].get(type_name, 0)
+                # Afficher le compte ou le pourcentage si on voulait plus de détail
+                output += f"{count:<10} | "
+
+            print(output.strip(" | "))
+
+        print("-" * len(header_line))
+
+    print("\n[NOTE] La colonne 'note_list' est principalement (ou totalement) de type 'str'.")
+    print("Pour inclure ses valeurs numériques dans les statistiques, une fonction d'extraction/conversion")
+    print("de listes depuis une chaîne sera nécessaire (Fonctionnalité Avancée).")
     input("Appuyez sur Entrée pour continuer...")
 
 
@@ -445,7 +540,7 @@ def main():
         print("=" * 50)
         print("1. Charger les Données (CSV, JSON, YAML, XML)")
         print("2. Afficher les Données (Aperçu)")
-        print("3. Statistiques & Structure (Min/Max/Moyenne)")
+        print("3. Statistiques & Analyse de Structure (J6 - Mediane/Mode/Distribution)")
         print("4. Filtrage (Critères simples et avancés)")
         print("5. Tri (Monocritère et Multi-critères)")
         print("6. Sauvegarder les Données (CSV, JSON, YAML, XML)")
@@ -465,6 +560,7 @@ def main():
         elif choix == '2':
             afficher_donnees(data)
         elif choix == '3':
+            # Maintenant gère les stats de base (J5) et l'analyse de structure (début J6)
             afficher_statistiques(data)
         elif choix == '4':
             data = gerer_filtrage(data)

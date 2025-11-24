@@ -193,3 +193,11 @@ Tapez 5 (Tri).
 Choisissez une colonne (ex: 3 pour price) et l'ordre (a ou d).
 
 Tapez 2 (Afficher les Données) pour vérifier le résultat.
+
+Test Rapide
+
+Dans le menu principal, tapez 1 (Charger les Données).
+
+Tapez 1 (CSV) et entrez le chemin items.csv.
+
+Tapez 3 (Statistiques) pour voir les Min/Max/Moyenne des colonnes id, price et quantity.
