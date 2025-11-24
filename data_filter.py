@@ -12,7 +12,9 @@ DataList = List[Dict[str, Any]]
 def convertir_type(value: Any) -> Any:
     """
     Tente de convertir une chaîne de caractères en int, float ou booléen.
-    Retourne la valeur originale (y compris None) si la conversion échoue.
+
+    Correction J4: Convertit les chaînes vides et les indicateurs N/A communs
+    en 'None' pour assurer leur placement correct (à la fin) lors du tri.
     """
 
     # 1. Gérer les valeurs déjà converties par JSON (int, float, bool, list) et None
@@ -23,12 +25,18 @@ def convertir_type(value: Any) -> Any:
         return value
 
     # Si ce n'est pas None et ce n'est pas un type primitif, il DOIT être une chaîne
-    # pour le reste de la logique de conversion (sinon, c'est une erreur de données)
     if not isinstance(value, str):
         # Devrait seulement arriver si on a un objet complexe (dict/set) ici, on le retourne
         return value
 
     # À partir d'ici, 'value' est garanti être une chaîne (str)
+
+    # Nettoyage et identification des valeurs manquantes (pour CSV/non-JSON)
+    lower_value = value.strip().lower()
+
+    # NOUVEAU: Traiter les chaînes vides ou les placeholders comme None (va au Rang 3 lors du tri)
+    if lower_value in ('', 'n/a', 'na', 'n.a.', 'nan', 'null'):
+        return None
 
     # Tentative de conversion numérique
     try:
@@ -41,7 +49,6 @@ def convertir_type(value: Any) -> Any:
         pass  # La conversion numérique a échoué
 
     # Tentative de conversion booléenne
-    lower_value = value.strip().lower()
     if lower_value in ('true', 'vrai', 't', '1'):
         return True
     if lower_value in ('false', 'faux', 'f', '0'):
@@ -242,7 +249,7 @@ def sauvegarder_donnees(data: DataList):
         input("Appuyez sur Entrée pour continuer...")
 
 
-# --- FONCTIONS STUBS MISES À JOUR ---
+# --- FONCTIONS DE MANIPULATION DES DONNÉES (J4+) ---
 
 def afficher_donnees(data: DataList):
     """Affiche un aperçu des données actuellement chargées."""
@@ -302,13 +309,102 @@ def gerer_filtrage(data: DataList) -> DataList:
 
 def gerer_tri(data: DataList) -> DataList:
     """(J4/J10) Gère le sous-menu de tri."""
-    print("\n[SOUS-MENU TRI]")
     if not data:
-        print("Veuillez d'abord charger les données.")
-        return
-    print("Fonctionnalité en cours de développement (J4/J10).")
-    input("Appuyez sur Entrée pour continuer...")
-    return data  # Retourne les données triées (ou inchangées)
+        print("\n[SOUS-MENU TRI] Veuillez d'abord charger les données.")
+        input("Appuyez sur Entrée pour continuer...")
+        return data
+
+    # Récupération des en-têtes disponibles pour le tri
+    headers = get_all_headers(data)
+
+    while True:
+        print("\n" + "-" * 50)
+        print("          SOUS-MENU TRI (J4 - Monocritère)")
+        print("-" * 50)
+
+        # Afficher les colonnes disponibles avec index
+        print("Colonnes disponibles pour le tri :")
+        for i, header in enumerate(headers, 1):
+            print(f"{i}. {header}")
+
+        print("-" * 50)
+        print("0. Annuler et Retour au Menu Principal")
+
+        # 1. Choix de la colonne
+        choix_colonne = input("Choisissez le numéro de la colonne à trier (ou 0 pour annuler) : ").strip()
+        if choix_colonne == '0':
+            return data
+
+        try:
+            index_colonne = int(choix_colonne) - 1
+            if 0 <= index_colonne < len(headers):
+                cle_tri = headers[index_colonne]
+            else:
+                print("Choix de colonne invalide.")
+                continue
+        except ValueError:
+            print("Entrée invalide. Veuillez entrer un numéro.")
+            continue
+
+        # 2. Choix de l'ordre
+        choix_ordre = input("Sens du tri (a/A pour Ascendant, d/D pour Descendant) : ").strip().lower()
+        if choix_ordre not in ('a', 'd'):
+            print("Ordre de tri invalide. Utilisez 'a' ou 'd'.")
+            continue
+
+        reverse_sort = (choix_ordre == 'd')
+
+        # 3. Exécution du tri
+        print(f"\nTri en cours sur la colonne '{cle_tri}' ({'Descendant' if reverse_sort else 'Ascendant'})...")
+
+        try:
+            # FONCTION CLÉ DE TRI AMÉLIORÉE (Gère les types incohérents et place None à la fin)
+            def tri_key(item):
+                value = item.get(cle_tri)
+
+                # Assignation d'un rang pour gérer la comparaison de types incompatibles (str vs float)
+                # L'ordre des rangs garantit que les types sont triés entre eux
+
+                if isinstance(value, (int, float)):
+                    # Rang 0 : Types numériques (triés en premier)
+                    return (0, value)
+
+                if isinstance(value, bool):
+                    # Rang 1 : Types booléens
+                    return (1, value)
+
+                if isinstance(value, str):
+                    # Rang 2 : Types chaîne (pour les noms, descriptions, etc.)
+                    return (2, value)
+
+                if value is None:
+                    # Rang 3 : Toujours à la fin (grâce à la conversion des N/A et chaînes vides en None)
+                    return (3, 0)
+
+                # Rang 4 : Types complexes (listes, dictionnaires, etc.)
+                return (4, str(value))
+
+            # FIN DE LA FONCTION CLÉ DE TRI AMÉLIORÉE
+
+            # Python's sorted() retourne une nouvelle liste triée
+            data_triee = sorted(data, key=tri_key, reverse=reverse_sort)
+
+            print("Tri terminé. Les données ont été mises à jour.")
+            input("Appuyez sur Entrée pour continuer...")
+            return data_triee
+
+        except TypeError as e:
+            # Cette erreur devrait maintenant être beaucoup plus rare
+            print(f"Erreur de tri : Impossible de comparer les types de données dans la colonne '{cle_tri}'.")
+            print(
+                "Vérifiez que toutes les valeurs sont comparables (ex: pas de mélange de nombres et de chaînes complexes).")
+            print(f"Détail de l'erreur: {e}")
+            input("Appuyez sur Entrée pour continuer...")
+            return data  # Retourne les données non triées en cas d'erreur
+        except Exception as e:
+            print(f"Une erreur inattendue est survenue lors du tri : {e}")
+            input("Appuyez sur Entrée pour continuer...")
+            return data
 
 
 def gerer_historique(data: DataList) -> DataList:

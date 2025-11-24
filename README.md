@@ -1,15 +1,15 @@
-Projet Data Filter
+📊 Projet Data Filter
 
 Auteur : [Votre Nom]
-Dernière mise à jour : Jour 3
+Dernière mise à jour : Jour 4
 
 Ce projet est une application en ligne de commande (CLI) développée en Python, visant à offrir un outil robuste pour le chargement, la manipulation (tri, filtrage, statistiques) et la sauvegarde de données structurées (CSV, JSON, etc.).
 
-État du Projet (Jour 3)
+🚀 État du Projet (Jour 4)
 
-Le squelette du projet est en place. Les fonctionnalités de base d'Entrée/Sortie (E/S) pour les formats standards sont terminées.
+Les fonctionnalités de base d'Entrée/Sortie (E/S) sont terminées. Nous commençons les fonctionnalités de manipulation des données.
 
-Fonctionnalités Implémentées
+✅ Fonctionnalités Implémentées
 
 Jours
 
@@ -51,7 +51,15 @@ Aperçu des données chargées (Option 2).
 
 Terminé
 
-Fichiers Clés
+J4
+
+Tri Simple
+
+Tri par une seule colonne, gestion du sens (Ascendant/Descendant) et gestion robuste des valeurs nulles (None).
+
+Terminé
+
+🛠️ Fichiers Clés
 
 Fichier
 
@@ -59,7 +67,7 @@ Description
 
 data_filter.py
 
-Le code source principal de l'application (contient toute la logique : menu, E/S, utilitaires).
+Le code source principal de l'application (contient toute la logique : menu, E/S, utilitaires, tri).
 
 items.csv
 
@@ -69,7 +77,7 @@ items.json
 
 Fichier de données de test au format JSON.
 
-Plan de Travail Détaillé
+📅 Plan de Travail Détaillé
 
 Voici le plan des étapes restantes à réaliser :
 
@@ -79,11 +87,15 @@ Objectif
 
 Détail de l'Implémentation
 
+Statut
+
 J4
 
 Tri Simple (Monocritère)
 
 Implémentation du tri par une seule colonne, gestion du sens (ascendant/descendant) et de la cohérence des types.
+
+TERMINÉ
 
 J5
 
@@ -91,11 +103,15 @@ Statistiques (Base)
 
 Calcul des valeurs Min/Max/Moyenne pour les colonnes numériques.
 
+À faire
+
 J6
 
 Statistiques (Avancées)
 
 Calcul des Mediane/Mode, analyse de la distribution des types (string, int, float, bool) et détection des valeurs nulles.
+
+À faire
 
 J7
 
@@ -103,11 +119,15 @@ Filtrage Simple
 
 Implémentation des filtres de base (>, <, =, contient, commence par) pour une seule colonne.
 
+À faire
+
 J8
 
 Filtrage Avancé
 
 Ajout de la logique de combinaisons de filtres (ET / OU).
+
+À faire
 
 J9
 
@@ -115,11 +135,15 @@ E/S Avancées
 
 Ajout du support pour les formats YAML et XML (nécessite l'installation de librairies supplémentaires).
 
+À faire
+
 J10
 
 Tri Multi-critères
 
 Extension de la fonctionnalité de tri pour pouvoir trier sur plusieurs colonnes successives.
+
+À faire
 
 J11
 
@@ -127,13 +151,17 @@ Projection
 
 Création d'une fonction pour sélectionner uniquement certaines colonnes et les afficher/sauvegarder (projection).
 
+À faire
+
 J12
 
 Gestion d'État
 
 Implémentation de l'Historique (Undo/Redo) et de la Gestion des Champs (Ajouter/Retirer des colonnes).
 
-Instructions de Lancement
+À faire
+
+⚙️ Instructions de Lancement
 
 Prérequis
 
@@ -160,6 +188,8 @@ Dans le menu principal, tapez 1 (Charger les Données).
 
 Tapez 1 (CSV) et entrez le chemin items.csv.
 
-Tapez 2 (Afficher les Données) pour vérifier la robustesse.
+Tapez 5 (Tri).
 
-Tapez 6 (Sauvegarder les Données) pour tester l'exportation.
+Choisissez une colonne (ex: 3 pour price) et l'ordre (a ou d).
+
+Tapez 2 (Afficher les Données) pour vérifier le résultat.

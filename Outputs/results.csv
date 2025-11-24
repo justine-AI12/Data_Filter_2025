@@ -1,0 +1,11 @@
+id,name,price,quantity,discontinued,note_list
+4,Casque Audio,65.5,,False,"9,10,11"
+10,Hub USB,18,,OUI,
+9,Ampoule connectée,12.5,,True,17
+1,Clavier Méca,99.99,15,True,"18,15,20"
+6,Microphone,quarante,10,True,10
+2,Souris Optique,45.0,8,False,"10,12,14"
+7,Câble USB,,5,False,
+3,Écran 4K,1200,2,True,"16,19,17"
+5,Webcam,,1,0,15
+8,Support écran,25.99,0,False,"14,14"
