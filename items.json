@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "Clavier Méca",
+    "price": 99.99,
+    "quantity": 15,
+    "discontinued": true,
+    "note_list": "18,15,20"
+  },
+  {
+    "id": 2,
+    "name": "Souris Optique",
+    "price": 45.00,
+    "quantity": 8,
+    "discontinued": false,
+    "note_list": "10,12,14"
+  },
+  {
+    "id": 3,
+    "name": "Écran 4K",
+    "price": 1200,
+    "quantity": 2,
+    "discontinued": "Vrai",
+    "note_list": "16,19,17"
+  },
+  {
+    "id": 4,
+    "name": "Casque Audio",
+    "price": 65.5,
+    "quantity": "N/A",
+    "discontinued": "faux",
+    "note_list": "9,10,11"
+  },
+  {
+    "id": 5,
+    "name": "Webcam",
+    "price": "N.A.",
+    "quantity": 1,
+    "discontinued": 0,
+    "note_list": "15"
+  },
+  {
+    "id": 6,
+    "name": "Câble USB",
+    "price": null,
+    "quantity": 5,
+    "discontinued": false,
+    "note_list": ""
+  },
+  {
+    "id": 7,
+    "name": "Ampoule connectée",
+    "price": 12.5,
+    "quantity": null,
+    "discontinued": true,
+    "note_list": "17"
+  }
+]
