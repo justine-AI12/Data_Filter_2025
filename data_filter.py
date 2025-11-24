@@ -1,17 +1,250 @@
 import sys
+import csv
+import json
+from typing import List, Dict, Any
+
+# Alias de type pour clarifier la structure des données internes
+DataList = List[Dict[str, Any]]
 
 
-# --- FONCTIONS STUBS (À implémenter aux Jours suivants) ---
+# --- FONCTIONS UTILITAIRES POUR LA ROBUSTESSE (J2) ---
 
-def charger_donnees():
+def convertir_type(value: Any) -> Any:
+    """
+    Tente de convertir une chaîne de caractères en int, float ou booléen.
+    Retourne la valeur originale (y compris None) si la conversion échoue.
+    """
+
+    # 1. Gérer les valeurs déjà converties par JSON (int, float, bool, list) et None
+    if value is None:
+        return None  # Retourne None directement (pour les 'null' JSON)
+
+    if isinstance(value, (int, float, bool, list)):
+        return value
+
+    # Si ce n'est pas None et ce n'est pas un type primitif, il DOIT être une chaîne
+    # pour le reste de la logique de conversion (sinon, c'est une erreur de données)
+    if not isinstance(value, str):
+        # Devrait seulement arriver si on a un objet complexe (dict/set) ici, on le retourne
+        return value
+
+    # À partir d'ici, 'value' est garanti être une chaîne (str)
+
+    # Tentative de conversion numérique
+    try:
+        # Tente d'abord de convertir en entier (si pas de point)
+        if '.' not in value and value.strip() != "":
+            return int(value)
+        # Tente ensuite de convertir en flottant
+        return float(value)
+    except ValueError:
+        pass  # La conversion numérique a échoué
+
+    # Tentative de conversion booléenne
+    lower_value = value.strip().lower()
+    if lower_value in ('true', 'vrai', 't', '1'):
+        return True
+    if lower_value in ('false', 'faux', 'f', '0'):
+        return False
+
+    return value  # Retourne la chaîne si aucune conversion n'est possible
+
+
+def nettoyer_donnees(data: DataList) -> DataList:
+    """
+    Applique la fonction convertir_type à chaque valeur dans la liste de dictionnaires.
+    C'est crucial pour les données lues depuis CSV (où tout est une chaîne).
+    """
+    donnees_nettoyees = []
+    for item in data:
+        # L'appel à convertir_type gère maintenant les None
+        nettoye = {k: convertir_type(v) for k, v in item.items()}
+        donnees_nettoyees.append(nettoye)
+    return donnees_nettoyees
+
+
+# --- FONCTIONS DE CHARGEMENT (J2) ---
+
+def load_json(filepath: str) -> DataList:
+    """Charge les données depuis un fichier JSON."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        # json.load() lit directement l'objet JSON (liste ou dict)
+        raw_data = json.load(f)
+
+    # Si les données sont lues directement comme une liste de dict, on nettoie
+    if isinstance(raw_data, list):
+        print(f"Succès : {len(raw_data)} enregistrements JSON chargés.")
+        return nettoyer_donnees(raw_data)
+    else:
+        # Gérer le cas où le JSON est un objet racine (ex: {"inventaire": [...]})
+        raise ValueError("Format JSON invalide : La racine doit être une liste d'enregistrements.")
+
+
+def load_csv(filepath: str) -> DataList:
+    """Charge les données depuis un fichier CSV."""
+    data = []
+    with open(filepath, 'r', encoding='utf-8') as f:
+        # DictReader lit chaque ligne comme un dictionnaire (clé = en-tête)
+        reader = csv.DictReader(f)
+        for row in reader:
+            data.append(row)
+
+    print(f"Succès : {len(data)} enregistrements CSV chargés.")
+    # Le nettoyage est essentiel pour CSV car toutes les valeurs sont des chaînes au départ
+    return nettoyer_donnees(data)
+
+
+def charger_donnees() -> DataList:
     """Gère le sous-menu pour le chargement des données (J2/J9)."""
-    print("\n[SOUS-MENU CHARGEMENT]")
-    print("Fonctionnalité en cours de développement (J2).")
-    input("Appuyez sur Entrée pour continuer...")
-    # Ici, nous aurons la logique pour choisir CSV, JSON, YAML, XML
+    while True:
+        print("\n" + "-" * 50)
+        print("          SOUS-MENU CHARGEMENT")
+        print("          Format(s) supporté(s) : 1, 2 (J2)")
+        print("-" * 50)
+        print("1. Charger un fichier CSV")
+        print("2. Charger un fichier JSON")
+        print("3. Charger un fichier YAML (J9 - Avancé)")
+        print("4. Charger un fichier XML (J9 - Avancé)")
+        print("0. Annuler et Retour au Menu Principal")
+        print("-" * 50)
+
+        choix = input("Votre choix de format : ").strip()
+
+        if choix == '0':
+            return []  # Retourne une liste vide pour indiquer qu'aucune donnée n'a été chargée
+
+        if choix in ('1', '2'):
+            filepath = input("Entrez le chemin du fichier : ").strip()
+            if not filepath:
+                print("Chemin du fichier non valide.")
+                continue
+
+            try:
+                if choix == '1':
+                    return load_csv(filepath)
+                elif choix == '2':
+                    return load_json(filepath)
+            except FileNotFoundError:
+                print(f"Erreur : Le fichier à l'emplacement '{filepath}' n'a pas été trouvé.")
+            except Exception as e:
+                # Afficher le type d'erreur pour aider au débogage
+                print(f"Erreur lors du chargement ou du traitement du fichier ({type(e).__name__}): {e}")
+
+        elif choix in ('3', '4'):
+            print("Fonctionnalité YAML/XML sera implémentée au Jour 9 (Avancé).")
+        else:
+            print("Choix invalide.")
+
+        input("Appuyez sur Entrée pour continuer...")
 
 
-def afficher_donnees(data):
+# --- FONCTIONS DE SAUVEGARDE (J3) ---
+
+def get_all_headers(data: DataList) -> List[str]:
+    """
+    Récupère l'ensemble des clés (en-têtes) présentes dans toutes les lignes de données.
+    Ceci est essentiel pour créer le header du CSV.
+    """
+    headers = set()
+    for row in data:
+        headers.update(row.keys())
+
+    # Retourne les en-têtes dans un ordre stable pour la lisibilité
+    if data:
+        # Utiliser l'ordre de la première ligne comme base
+        ordered_headers = list(data[0].keys())
+        # Ajouter les autres en-têtes triés alphabétiquement
+        for h in sorted(list(headers - set(ordered_headers))):
+            ordered_headers.append(h)
+        return ordered_headers
+
+    return list(sorted(list(headers)))
+
+
+def save_json(data: DataList, filepath: str):
+    """Sauvegarde les données au format JSON."""
+    # Note: json.dump gère automatiquement les types Python (int, float, bool, None)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        # Utilisation de indent=4 pour une meilleure lisibilité du fichier sauvegardé
+        json.dump(data, f, indent=4)
+    print(f"Succès : {len(data)} enregistrements sauvegardés au format JSON dans '{filepath}'.")
+
+
+def save_csv(data: DataList, filepath: str):
+    """Sauvegarde les données au format CSV."""
+    if not data:
+        raise ValueError("Impossible de sauvegarder : la liste de données est vide.")
+
+    # 1. Récupérer tous les en-têtes possibles
+    headers = get_all_headers(data)
+
+    with open(filepath, 'w', newline='', encoding='utf-8') as f:
+        # Utilisation de DictWriter pour écrire les dictionnaires
+        # fieldnames = l'ordre des colonnes ; extrasaction='ignore' ignore les clés non spécifiées dans headers
+        writer = csv.DictWriter(f, fieldnames=headers, extrasaction='ignore')
+
+        # Écrire l'en-tête (la première ligne du CSV)
+        writer.writeheader()
+
+        # Écrire les lignes de données
+        # Les valeurs None (null) seront écrites comme des chaînes vides par défaut
+        writer.writerows(data)
+
+    print(f"Succès : {len(data)} enregistrements sauvegardés au format CSV dans '{filepath}'.")
+
+
+def sauvegarder_donnees(data: DataList):
+    """(J3/J9) Gère le sous-menu de sauvegarde."""
+    if not data:
+        print("\n[SOUS-MENU SAUVEGARDE] Aucune donnée à sauvegarder.")
+        input("Appuyez sur Entrée pour continuer...")
+        return
+
+    while True:
+        print("\n" + "-" * 50)
+        print("          SOUS-MENU SAUVEGARDE")
+        print("          Format(s) supporté(s) : 1, 2 (J3)")
+        print("-" * 50)
+        print("1. Sauvegarder en CSV")
+        print("2. Sauvegarder en JSON")
+        print("3. Sauvegarder en YAML (J9 - Avancé)")
+        print("4. Sauvegarder en XML (J9 - Avancé)")
+        print("0. Annuler et Retour au Menu Principal")
+        print("-" * 50)
+
+        choix = input("Votre choix de format : ").strip()
+
+        if choix == '0':
+            return  # Retour au menu principal
+
+        if choix in ('1', '2'):
+            filepath = input("Entrez le chemin du fichier de sortie : ").strip()
+            if not filepath:
+                print("Chemin du fichier non valide.")
+                continue
+
+            try:
+                if choix == '1':
+                    save_csv(data, filepath)
+                elif choix == '2':
+                    save_json(data, filepath)
+                # Sortir de la boucle de sauvegarde après succès
+                input("Sauvegarde terminée. Appuyez sur Entrée pour continuer...")
+                return
+            except Exception as e:
+                print(f"Erreur lors de la sauvegarde du fichier ({type(e).__name__}): {e}")
+
+        elif choix in ('3', '4'):
+            print("Fonctionnalité YAML/XML sera implémentée au Jour 9 (Avancé).")
+        else:
+            print("Choix invalide.")
+
+        input("Appuyez sur Entrée pour continuer...")
+
+
+# --- FONCTIONS STUBS MISES À JOUR ---
+
+def afficher_donnees(data: DataList):
     """Affiche un aperçu des données actuellement chargées."""
     if not data:
         print("\n[APERÇU DES DONNÉES] Aucune donnée chargée.")
@@ -26,6 +259,7 @@ def afficher_donnees(data):
     # Afficher l'en-tête (les clés du premier dictionnaire)
     try:
         header = list(data[0].keys())
+        # Afficher la ligne d'en-tête
         print(" | ".join(header))
         print("-" * 50)
 
@@ -33,8 +267,8 @@ def afficher_donnees(data):
         for i, row in enumerate(data):
             if i >= lignes_a_afficher:
                 break
-            # Convertir les valeurs en chaînes pour l'affichage
-            display_values = [str(row.get(col, '')) for col in header]
+            # Utilisation de repr() pour bien afficher les types (True/False/Nombres)
+            display_values = [repr(row.get(col, '')) for col in header]
             print(" | ".join(display_values))
 
         if len(data) > lignes_a_afficher:
@@ -45,7 +279,7 @@ def afficher_donnees(data):
     input("\nAppuyez sur Entrée pour continuer...")
 
 
-def afficher_statistiques(data):
+def afficher_statistiques(data: DataList):
     """(J5/J6) Calcule et affiche les statistiques."""
     print("\n[STATISTIQUES ET STRUCTURE]")
     if not data:
@@ -55,7 +289,7 @@ def afficher_statistiques(data):
     input("Appuyez sur Entrée pour continuer...")
 
 
-def gerer_filtrage(data):
+def gerer_filtrage(data: DataList) -> DataList:
     """(J7/J8/J11) Gère le sous-menu de filtrage."""
     print("\n[SOUS-MENU FILTRAGE]")
     if not data:
@@ -66,7 +300,7 @@ def gerer_filtrage(data):
     return data  # Retourne les données filtrées (ou inchangées)
 
 
-def gerer_tri(data):
+def gerer_tri(data: DataList) -> DataList:
     """(J4/J10) Gère le sous-menu de tri."""
     print("\n[SOUS-MENU TRI]")
     if not data:
@@ -77,18 +311,7 @@ def gerer_tri(data):
     return data  # Retourne les données triées (ou inchangées)
 
 
-def sauvegarder_donnees(data):
-    """(J3/J9) Gère le sous-menu de sauvegarde."""
-    print("\n[SOUS-MENU SAUVEGARDE]")
-    if not data:
-        print("Veuillez d'abord charger les données.")
-        return
-    print("Fonctionnalité en cours de développement (J3/J9).")
-    # Ici, nous aurons la logique pour choisir le format de sortie
-    input("Appuyez sur Entrée pour continuer...")
-
-
-def gerer_historique(data):
+def gerer_historique(data: DataList) -> DataList:
     """(J12) Gère les opérations Undo/Redo."""
     print("\n[HISTORIQUE - UNDO/REDO]")
     print("Fonctionnalité en cours de développement (J12).")
@@ -96,7 +319,7 @@ def gerer_historique(data):
     return data
 
 
-def gerer_champs(data):
+def gerer_champs(data: DataList) -> DataList:
     """(J12) Gère l'ajout ou le retrait de champs."""
     print("\n[GESTION DES CHAMPS]")
     if not data:
@@ -110,13 +333,8 @@ def gerer_champs(data):
 # --- BOUCLE PRINCIPALE DE L'APPLICATION ---
 
 def main():
-    # Liste pour stocker les données (liste de dictionnaires)
-    # Nous allons la pré-remplir avec des données de test pour le J1
-    data = [
-        {'firstname': 'Alice', 'lastname': 'Martin', 'age': '20', 'price': '99.99', 'apprentice': 'True'},
-        {'firstname': 'Bob', 'lastname': 'Dupont', 'age': '22', 'price': '450.00', 'apprentice': 'False'},
-        {'firstname': 'Charlie', 'lastname': 'Leblanc', 'age': '19', 'price': '15.00', 'apprentice': 'True'},
-    ]
+    # Suppression des données de test du J1. 'data' est initialement vide.
+    data: DataList = []
 
     # Nous aurons besoin de l'historique au J12, mais on le prépare ici
     # historique = [] # Pile d'états de données pour Undo/Redo
@@ -144,15 +362,18 @@ def main():
         choix = input("Votre choix : ").strip()
 
         if choix == '1':
-            charger_donnees()
+            new_data = charger_donnees()
+            if new_data:
+                data = new_data
+                print(f"\nChargement terminé. {len(data)} enregistrement(s) prêts.")
         elif choix == '2':
             afficher_donnees(data)
         elif choix == '3':
             afficher_statistiques(data)
         elif choix == '4':
-            data = gerer_filtrage(data)  # On met à jour 'data' avec le résultat du filtrage
+            data = gerer_filtrage(data)
         elif choix == '5':
-            data = gerer_tri(data)  # On met à jour 'data' avec le résultat du tri
+            data = gerer_tri(data)
         elif choix == '6':
             sauvegarder_donnees(data)
         elif choix == '7':
